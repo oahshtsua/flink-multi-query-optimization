@@ -52,6 +52,13 @@ services:
       test: curl -sf http://localhost:8083/v1/info
       interval: 5s
 
+  generator:
+    build: ../harness
+    profiles: [manual]
+    command: python generator.py
+    environment:
+      RATE: ${RATE}
+
   python:
     image: python:3.14-slim
     entrypoint: python

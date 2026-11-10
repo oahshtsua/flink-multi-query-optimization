@@ -13,21 +13,36 @@ Queries come from the Nexmark benchmark. They read events from Kafka and run on 
 | Flink | 2.2.1 (`flink:2.2.1-scala_2.12-java17`). 2.3.0 has no Kafka connector release yet. |
 | Kafka SQL connector | `flink-sql-connector-kafka` 5.0.0-2.2 |
 | Kafka | `apache/kafka:4.3.2` (single KRaft node) |
-| Python | 3.14 |
+| Python | 3.14, harness managed with uv 0.13.7 (dependencies locked in `harness/uv.lock`) |
 | Nexmark | [`6b3646c3baec701f1fa74baf938d235f742e5d3c`](https://github.com/nexmark/nexmark/commit/6b3646c3baec701f1fa74baf938d235f742e5d3c) (submodule in `nexmark/`) |
+
+## Event schema
+
+Events model an online auction and follow Nexmark's Kafka table (`nexmark/nexmark-flink/src/main/resources/queries/ddl_kafka.sql`), so the Nexmark queries run unchanged. Each Kafka message is one JSON object: an `event_type` plus three nested fields, of which only the one matching the type is set (the others are `null` or left out).
+
+| `event_type` | Set field | Its fields |
+|---|---|---|
+| 0 | `person` | `id`, `name`, `emailAddress`, `creditCard`, `city`, `state`, `dateTime`, `extra` |
+| 1 | `auction` | `id`, `itemName`, `description`, `initialBid`, `reserve`, `dateTime`, `expires`, `seller` (person id), `category`, `extra` |
+| 2 | `bid` | `auction` (auction id), `bidder` (person id), `price`, `channel`, `url`, `dateTime`, `extra` |
+
+- Ids, `initialBid`, `reserve`, `price` and `category` are integers (BIGINT); `extra` is free-form padding; the rest are strings.
+- `dateTime` and `expires` are `TIMESTAMP(3)` written as `"yyyy-MM-dd HH:mm:ss.SSS"` without a time zone.
 
 ## Usage
 
 Requires Docker with Compose v2 and `make`. Clone with `git clone --recursive` (or run `git submodule update --init` afterwards).
 
-Everything under `infra/` is driven through the Makefile:
+Everything under `infra/` and the generator in `harness/` are driven through the Makefile:
 
 ```
-make help    # list targets
-make up      # start Kafka, Flink (jobmanager, taskmanager) and the SQL gateway
-make smoke   # end-to-end check: Flink SQL writes to Kafka and reads it back
-make sql     # interactive Flink SQL client
-make down    # stop everything and delete all data
+make help            # list targets
+make up              # start Kafka, Flink (jobmanager, taskmanager) and the SQL gateway
+make smoke           # end-to-end check: Flink SQL writes to Kafka and reads it back
+make generator-up    # start the event generator in the background (RATE=events/s, default 1000)
+make generator-down  # stop and remove the event generator
+make sql             # interactive Flink SQL client
+make down            # stop everything and delete all data
 ```
 
 SQL is submitted through the Flink SQL Gateway, which runs every statement as a job on the session cluster.
@@ -49,4 +64,4 @@ PARALLELISM=4
 KAFKA_PARTITIONS=4
 ```
 
-Single runs can also override on the command line: `make up PARALLELISM=2`. Re-run `make up` after changing values.
+Single runs can also override on the command line: `make up PARALLELISM=2`, `make generator-up RATE=5000`. Re-run `make up` after changing values.
