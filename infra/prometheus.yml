@@ -1,0 +1,22 @@
+# Prometheus pulls the /metrics endpoint of each target every 5s.
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  # Per-container CPU, memory and network, measured by the host.
+  - job_name: cadvisor
+    static_configs:
+      - targets: [cadvisor:8080]
+
+  # Flink's own metrics.
+  - job_name: flink-jobmanager
+    static_configs:
+      - targets: [jobmanager:9249]
+
+  # One target per TaskManager container; Docker DNS returns all of them.
+  - job_name: flink-taskmanager
+    dns_sd_configs:
+      - names: [taskmanager]
+        type: A
+        port: 9249
+        refresh_interval: 5s

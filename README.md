@@ -13,6 +13,8 @@ Queries come from the Nexmark benchmark. They read events from Kafka and run on 
 | Flink | 2.2.1 (`flink:2.2.1-scala_2.12-java17`). 2.3.0 has no Kafka connector release yet. |
 | Kafka SQL connector | `flink-sql-connector-kafka` 5.0.0-2.2 |
 | Kafka | `apache/kafka:4.3.2` (single KRaft node) |
+| Prometheus | `prom/prometheus:v3.15.1` |
+| cAdvisor | `ghcr.io/google/cadvisor:v0.60.6` |
 | Python | 3.14, harness managed with uv 0.13.7 (dependencies locked in `harness/uv.lock`) |
 | Nexmark | [`6b3646c3baec701f1fa74baf938d235f742e5d3c`](https://github.com/nexmark/nexmark/commit/6b3646c3baec701f1fa74baf938d235f742e5d3c) (submodule in `nexmark/`) |
 
@@ -37,7 +39,7 @@ Everything under `infra/` and the generator in `harness/` are driven through the
 
 ```
 make help            # list targets
-make up              # start Kafka, Flink (jobmanager, taskmanager) and the SQL gateway
+make up              # start Kafka, Flink (jobmanager, taskmanager), the SQL gateway, cAdvisor and Prometheus
 make smoke           # end-to-end check: Flink SQL writes to Kafka and reads it back
 make generator-up    # start the event generator in the background (RATE=events/s, default 1000)
 make generator-down  # stop and remove the event generator
@@ -51,7 +53,15 @@ SQL is submitted through the Flink SQL Gateway, which runs every statement as a 
 |---|---|
 | Flink web UI / REST | http://localhost:8081 |
 | Flink SQL Gateway REST | http://localhost:8083 |
+| Prometheus UI / API | http://localhost:9090 |
 | Kafka (inside compose) | `kafka:9092` |
+
+### Monitoring
+
+Prometheus (`infra/prometheus.yml`) collects metrics every 5 s from two sources and stores them as time series:
+
+- **cAdvisor**: per-container CPU, memory and network, measured from the host (`container_*` metrics, label `container_label_com_docker_compose_service`).
+- **Flink's Prometheus reporter** on the JobManager and every TaskManager: per job, task and operator records, busy/backpressure time, Kafka source backlog and lag, JVM memory (`flink_*` metrics, labels `job_name`, `operator_name`, …). Set `pipeline.name` on a statement to name its job.
 
 ### Configuration
 
