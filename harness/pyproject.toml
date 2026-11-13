@@ -5,5 +5,6 @@ description = "Experiment harness for multi-query optimization in Flink"
 requires-python = ">=3.14"
 dependencies = [
     "confluent-kafka==2.16.1",
+    "httpx==0.28.1",
     "pydantic==2.14.3",
 ]
