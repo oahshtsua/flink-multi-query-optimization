@@ -1,0 +1,21 @@
+{# Nexmark q12, processing-time tumbling window. Parameters: window_seconds. #}
+CREATE TABLE {{ name }} (
+  bidder BIGINT,
+  bid_count BIGINT,
+  starttime TIMESTAMP(3),
+  endtime TIMESTAMP(3)
+) WITH (
+  'connector' = 'blackhole'
+);
+
+CREATE VIEW B AS SELECT *, PROCTIME() as p_time FROM bid;
+
+INSERT INTO {{ name }}
+SELECT
+    bidder,
+    count(*) as bid_count,
+    window_start AS starttime,
+    window_end AS endtime
+FROM TABLE(
+        TUMBLE(TABLE B, DESCRIPTOR(p_time), INTERVAL '{{ window_seconds }}' SECOND))
+GROUP BY bidder, window_start, window_end

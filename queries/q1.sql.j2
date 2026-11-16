@@ -1,0 +1,19 @@
+{# Nexmark q1, currency conversion. Parameters: rate, alias. #}
+CREATE TABLE {{ name }} (
+  auction  BIGINT,
+  bidder  BIGINT,
+  price  DECIMAL(23, 3),
+  `dateTime`  TIMESTAMP(3),
+  extra  VARCHAR
+) WITH (
+  'connector' = 'blackhole'
+);
+
+INSERT INTO {{ name }}
+SELECT
+    auction,
+    bidder,
+    {{ rate }} * price as {{ alias }},
+    `dateTime`,
+    extra
+FROM bid

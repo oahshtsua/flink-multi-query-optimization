@@ -1,0 +1,10 @@
+{# Nexmark q2, selection. Parameters: divisor. #}
+CREATE TABLE {{ name }} (
+  auction  BIGINT,
+  price  BIGINT
+) WITH (
+  'connector' = 'blackhole'
+);
+
+INSERT INTO {{ name }}
+SELECT auction, price FROM bid WHERE MOD(auction, {{ divisor }}) = 0
