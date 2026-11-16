@@ -1,0 +1,28 @@
+# Query variants for the reuse experiments.
+
+[q1]
+template = "q1.sql.j2"
+rate = { default = 0.908, variants = [0.9, 1.1] }
+alias = { default = "price", variants = ["price_eur"] }
+extra_columns = { default = ["`dateTime`", "extra"], variants = [[], ["`dateTime`"], ["`dateTime`", "extra", "channel", "url"]] }
+
+[q2]
+template = "q2.sql.j2"
+divisor = { default = 123, variants = [123, 124, 1000] }
+columns = { default = ["auction", "price"], variants = [["auction"], ["auction", "price", "bidder"]] }
+
+[q12]
+template = "q12.sql.j2"
+window_seconds = { default = 10, variants = [20, 60] }
+
+[q14]
+template = "q14.sql.j2"
+lower = { default = 1000000, variants = [2000000] }
+upper = { default = 50000000 }
+predicate_order = { default = "lower_first", variants = ["upper_first"] }
+
+[q17]
+template = "q17.sql.j2"
+low = { default = 10000, variants = [5000, 20000] }
+high = { default = 1000000 }
+extra_aggregates = { default = ["min(price) AS min_price", "max(price) AS max_price", "avg(price) AS avg_price", "sum(price) AS sum_price"], variants = [[], ["max(price) AS max_price"]] }

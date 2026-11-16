@@ -1,0 +1,11 @@
+{# Nexmark q17, auction statistics. Parameters: low, high, extra_aggregates. #}
+SELECT
+     auction,
+     DATE_FORMAT(`dateTime`, 'yyyy-MM-dd') as `day`,
+     count(*) AS total_bids,
+     count(*) filter (where price < {{ low }}) AS rank1_bids,
+     count(*) filter (where price >= {{ low }} and price < {{ high }}) AS rank2_bids,
+     count(*) filter (where price >= {{ high }}) AS rank3_bids{% for aggregate in extra_aggregates %},
+     {{ aggregate }}{% endfor %}
+FROM bid
+GROUP BY auction, DATE_FORMAT(`dateTime`, 'yyyy-MM-dd')

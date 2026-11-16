@@ -1,0 +1,20 @@
+{# Nexmark q14 without the count_char UDF. Parameters: lower, upper, predicate_order. #}
+{%- set lower_bound = "0.908 * price > " ~ lower %}
+{%- set upper_bound = "0.908 * price < " ~ upper %}
+SELECT
+    auction,
+    bidder,
+    0.908 * price as price,
+    CASE
+        WHEN HOUR(`dateTime`) >= 8 AND HOUR(`dateTime`) <= 18 THEN 'dayTime'
+        WHEN HOUR(`dateTime`) <= 6 OR HOUR(`dateTime`) >= 20 THEN 'nightTime'
+        ELSE 'otherTime'
+    END AS bidTimeType,
+    `dateTime`,
+    extra
+FROM bid
+{% if predicate_order == "lower_first" -%}
+WHERE {{ lower_bound }} AND {{ upper_bound }}
+{%- else -%}
+WHERE {{ upper_bound }} AND {{ lower_bound }}
+{%- endif %}

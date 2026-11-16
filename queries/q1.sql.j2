@@ -1,0 +1,7 @@
+{# Nexmark q1, currency conversion. Parameters: rate, alias, extra_columns. #}
+SELECT
+    auction,
+    bidder,
+    {{ rate }} * price as {{ alias }}{% for column in extra_columns %},
+    {{ column }}{% endfor %}
+FROM bid

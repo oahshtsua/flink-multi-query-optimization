@@ -1,0 +1,11 @@
+{# Nexmark q12, processing-time tumbling window. Parameters: window_seconds. #}
+CREATE VIEW B AS SELECT *, PROCTIME() as p_time FROM bid;
+
+SELECT
+    bidder,
+    count(*) as bid_count,
+    window_start AS starttime,
+    window_end AS endtime
+FROM TABLE(
+        TUMBLE(TABLE B, DESCRIPTOR(p_time), INTERVAL '{{ window_seconds }}' SECOND))
+GROUP BY bidder, window_start, window_end
