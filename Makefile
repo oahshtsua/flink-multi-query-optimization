@@ -33,3 +33,7 @@ generator-down: ## Stop and remove the event generator
 
 smoke: up ## End-to-end check via the REST APIs: Flink SQL writes to Kafka and reads it back
 	$(COMPOSE) run --rm python infra/smoke.py
+
+load: ## Load ad_clicks and sensors datasets into Kafka
+	$(COMPOSE) --profile load run --rm --build producer /data/ad_clicks.dat ad_clicks kafka:9092
+	$(COMPOSE) --profile load run --rm producer /data/sensors.dat sensors kafka:9092
