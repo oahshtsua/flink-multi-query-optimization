@@ -67,7 +67,15 @@ def single(query: str):
 @app.command()
 def independent(query: str, param: str | None = None):
     """Run the base query and its variants, each as its own job."""
-    pass
+    base, variants = VariantGenerator().generate(query, param)
+    report = Report(query, mode="independent")
+    with NexmarkSession({"pipeline.name": base.name}) as session:
+        submit_query(session, base, report)
+
+        for variant in variants:
+            submit_query(session, variant, report)
+
+    print(f"{base.name} with {len(variants)} variants, report in {report.dir}")
 
 
 @app.command()
