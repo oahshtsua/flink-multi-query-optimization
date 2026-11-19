@@ -15,16 +15,25 @@ NEXMARK = (
 app = typer.Typer()
 
 
-def create_nexmark_tables(session):
-    """Create Nexmark's `kafka` table over the topic and the person/auction/bid views on top of it."""
-    session.execute_script(
-        (NEXMARK / "ddl_kafka.sql")
-        .read_text()
-        .replace("${BOOTSTRAP_SERVERS}", "kafka:9092")
-    )
-    session.execute_script(
-        (NEXMARK / "ddl_views.sql").read_text().replace("${NEXMARK_TABLE}", "kafka")
-    )
+class NexmarkSession(Session):
+    """A session that starts with Nexmark's `kafka` table and its person/auction/bid views."""
+
+    def __init__(self, properties=None):
+        super().__init__(properties)
+        try:
+            self.execute_script(
+                (NEXMARK / "ddl_kafka.sql")
+                .read_text()
+                .replace("${BOOTSTRAP_SERVERS}", "kafka:9092")
+            )
+            self.execute_script(
+                (NEXMARK / "ddl_views.sql")
+                .read_text()
+                .replace("${NEXMARK_TABLE}", "kafka")
+            )
+        except Exception:
+            self.close()
+            raise
 
 
 def explain(session, statement):
@@ -38,8 +47,7 @@ def single(query: str):
     """Run the base query alone, as one job."""
     base, _ = VariantGenerator().generate(query)
     report = Report(query, mode="single")
-    with Session({"pipeline.name": base.name}) as session:
-        create_nexmark_tables(session)
+    with NexmarkSession({"pipeline.name": base.name}) as session:
         *setup, insert = split_statements(base.sql)
         for statement in setup:
             session.execute(statement)
