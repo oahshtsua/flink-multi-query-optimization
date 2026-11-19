@@ -81,7 +81,27 @@ def independent(query: str, param: str | None = None):
 @app.command()
 def joint(query: str, param: str | None = None):
     """Run the base query and its variants together in one statement set, as one job."""
-    pass
+    base, variants = VariantGenerator().generate(query, param)
+    report = Report(query, mode="joint")
+    queries = [base, *variants]
+    with NexmarkSession({"pipeline.name": base.name}) as session:
+        inserts = []
+        for q in queries:
+            *setup, insert = split_statements(q.sql)
+            for statement in setup:
+                session.execute(statement)
+            inserts.append(insert)
+        statement_set = (
+            "STATEMENT SET BEGIN\n" + "".join(f"{i};\n" for i in inserts) + "END"
+        )
+        report.add_explain(f"{base.name}_joint", explain(session, statement_set))
+        job_id = session.execute("EXECUTE " + statement_set).job_id
+
+    for q in queries:
+        report.add_query(q, job_id)
+    print(
+        f"{base.name} with {len(variants)} variants: job {job_id}, report in {report.dir}"
+    )
 
 
 if __name__ == "__main__":
