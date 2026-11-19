@@ -42,18 +42,25 @@ def explain(session, statement):
     return result.rows[0][0]
 
 
+def submit_query(session, query, report):
+    """Submit one query as its own job"""
+    session.execute(f"SET 'pipeline.name' = '{query.name}'")
+    *setup, insert = split_statements(query.sql)
+    for statement in setup:
+        session.execute(statement)
+    report.add_explain(query.name, explain(session, insert))
+    job_id = session.execute(insert).job_id
+    report.add_query(query, job_id)
+    return job_id
+
+
 @app.command()
 def single(query: str):
     """Run the base query alone, as one job."""
     base, _ = VariantGenerator().generate(query)
     report = Report(query, mode="single")
-    with NexmarkSession({"pipeline.name": base.name}) as session:
-        *setup, insert = split_statements(base.sql)
-        for statement in setup:
-            session.execute(statement)
-        report.add_explain(base.name, explain(session, insert))
-        job_id = session.execute(insert).job_id
-    report.add_query(base, job_id)
+    with NexmarkSession() as session:
+        job_id = submit_query(session, base, report)
     print(f"{base.name}: job {job_id}, report in {report.dir}")
 
 
